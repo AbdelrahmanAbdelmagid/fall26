@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive Physics Lab Schedule</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background: #fafafa;
+    color: #222;
+  }
+
+  h1 { text-align: center; margin-bottom: 8px; }
+  .subtitle { text-align: center; color: #666; margin-bottom: 22px; }
+
+  .controls {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+  }
+
+  .control-group { margin-bottom: 12px; }
+  .control-title { font-weight: bold; margin-right: 10px; }
+
+  label {
+    margin-right: 15px;
+    display: inline-block;
+    margin-bottom: 8px;
+    cursor: pointer;
+  }
+
+  button {
+    padding: 8px 13px;
+    margin: 4px 6px 4px 0;
+    border: 1px solid #bbb;
+    background: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  button:hover { background: #f0f0f0; }
+
+  .save-button {
+    background: #1f6f43;
+    color: white;
+    border-color: #1f6f43;
+  }
+  .save-button:hover { background: #185737; }
+
+  .table-wrap { overflow-x: auto; }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 1200px;
+    table-layout: fixed;
+    background: white;
+  }
+
+  th, td {
+    border: 1px solid #ccc;
+    text-align: center;
+    padding: 5px;
+    height: 86px;
+    vertical-align: top;
+  }
+
+  th {
+    background-color: #f4f4f4;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  td:first-child, th:first-child {
+    width: 95px;
+    font-weight: bold;
+    background: #f8f8f8;
+    position: sticky;
+    left: 0;
+    z-index: 1;
+  }
+
+  th:first-child { z-index: 3; }
+
+  .event {
+    padding: 6px;
+    margin: 2px 0;
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.28;
+    border: 3px solid #999;
+  }
+
+  .course-104 { background-color: #d9d2e9; }
+  .course-105 { background-color: #d9ead3; }
+  .course-111 { background-color: #cfe2f3; }
+  .course-211 { background-color: #fce5cd; }
+  .course-224 { background-color: #fff2cc; }
+
+  .engineer-Suleyman { border-color: #d32f2f; }
+  .engineer-Abdelrahman { border-color: #1565c0; }
+  .engineer-Unassigned { border-color: #999; border-style: dashed; }
+
+  .engineer-select {
+    width: 100%;
+    margin-top: 5px;
+    padding: 3px;
+    font-size: 11px;
+    border-radius: 4px;
+    border: 1px solid #aaa;
+    background: white;
+  }
+
+  .hidden { display: none; }
+
+  .legend {
+    margin-top: 15px;
+    font-size: 13px;
+    color: #555;
+  }
+
+  .warning {
+    margin-top: 15px;
+    padding: 10px;
+    background: #fde9e7;
+    border: 1px solid #e6b8b7;
+    border-radius: 6px;
+    color: #8a1c1c;
+  }
+
+  .status {
+    display: inline-block;
+    margin-left: 8px;
+    color: #1f6f43;
+    font-weight: bold;
+  }
+
+  @media print {
+    .controls, .warning { display: none; }
+    body { margin: 0; }
+    table { min-width: 0; font-size: 10px; }
+  }
+</style>
+</head>
+
+<body>
+
+<h1>Physics Weekly Lab Schedule</h1>
+<div class="subtitle">Assign each section to Lab Engineer Suleyman or Abdelrahman</div>
+
+<div class="controls">
+
+  <div class="control-group">
+    <span class="control-title">Courses:</span>
+    <label><input type="checkbox" value="104" class="course-checkbox" checked=""> PHYS 104</label>
+    <label><input type="checkbox" value="105" class="course-checkbox" checked=""> PHYS 105</label>
+    <label><input type="checkbox" value="111" class="course-checkbox" checked=""> PHYS 111</label>
+    <label><input type="checkbox" value="211" class="course-checkbox" checked=""> PHYS 211</label>
+    <label><input type="checkbox" value="224" class="course-checkbox" checked=""> PHYS 224</label>
+  </div>
+
+  <div class="control-group">
+    <span class="control-title">Show assignments:</span>
+    <label><input type="checkbox" value="Suleyman" class="engineer-checkbox"> Suleyman</label>
+    <label><input type="checkbox" value="Abdelrahman" class="engineer-checkbox"> Abdelrahman</label>
+    <label><input type="checkbox" value="Unassigned" class="engineer-checkbox"> Unassigned</label>
+  </div>
+
+  <div>
+    <button onclick="showAll()">Show All</button>
+    <button onclick="clearCourseFilters()">Clear Course Filters</button>
+    <button onclick="resetAssignments()">Reset Assignments</button>
+    <button class="save-button" onclick="downloadSavedHtml()">Save Assigned HTML</button>
+    <span id="saveStatus" class="status"></span>
+  </div>
+
+</div>
+
+<div class="table-wrap">
+<table id="schedule">
+  <thead>
+    <tr><th>Day</th></tr>
+  </thead>
+  <tbody></tbody>
+</table>
+</div>
+
+<div class="legend">
+  <b>Engineer border colors:</b>
+  Suleyman = red,
+  Abdelrahman = blue,
+  Unassigned = dashed gray.
+  Assignments are also automatically remembered by your browser.
+</div>
+
+<div class="warning">
+  PHYS 105 Section 11 was listed as 14:00–14:00 in the source, so it is shown at 14:00 only and should be verified.
+</div>
+
+<script>
+const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"];
+const hours = [];
+for (let h = 8; h < 18; h++) hours.push(h);
+
+const scheduleData = [
+  {id:"sun-105-12",day:"Sunday",start:8,end:10,course:"105",type:"Lab",section:"12",room:"AB - S031-B",group:"ENGR-NEW-12",engineer:"Unassigned"},
+  {id:"sun-224-01",day:"Sunday",start:8,end:10,course:"224",type:"Lab",section:"01",room:"AB - S026-B3",group:"",engineer:"Unassigned"},
+  {id:"sun-104-03",day:"Sunday",start:10,end:12,course:"104",type:"Lab",section:"03",room:"AB - S026-B3",group:"SWD-SO-2",engineer:"Unassigned"},
+  {id:"sun-105-10",day:"Sunday",start:10,end:12,course:"105",type:"Lab",section:"10",room:"AB - S031-B",group:"ENGR-NEW-10",engineer:"Unassigned"},
+  {id:"sun-105-04",day:"Sunday",start:12,end:14,course:"105",type:"Lab",section:"04",room:"AB - S031-B",group:"ENGR-NEW-4",engineer:"Unassigned"},
+  {id:"sun-104-04",day:"Sunday",start:14,end:16,course:"104",type:"Lab",section:"04",room:"AB - S026-B3",group:"SWD-FR-1",engineer:"Unassigned"},
+  {id:"sun-105-05",day:"Sunday",start:14,end:16,course:"105",type:"Lab",section:"05",room:"AB - S031-B",group:"ENGR-NEW-5",engineer:"Unassigned"},
+  {id:"sun-224-02",day:"Sunday",start:14,end:16,course:"224",type:"Lab",section:"02",room:"AB - S026-B3",group:"",engineer:"Unassigned"},
+  {id:"sun-224-t01",day:"Sunday",start:16,end:17,course:"224",type:"Tutorial",section:"01",room:"AB - F004-D",group:"NANENG-SR-2",engineer:"Unassigned"},
+  {id:"sun-105-03",day:"Sunday",start:16,end:18,course:"105",type:"Lab",section:"03",room:"AB - S031-B",group:"ENGR-NEW-3",engineer:"Unassigned"},
+  {id:"sun-224-t02",day:"Sunday",start:17,end:18,course:"224",type:"Tutorial",section:"02",room:"AB - F004-D",group:"NANENG-SR-1",engineer:"Unassigned"},
+
+  {id:"mon-105-07",day:"Monday",start:8,end:10,course:"105",type:"Lab",section:"07",room:"AB - S031-B",group:"ENGR-NEW-7",engineer:"Unassigned"},
+  {id:"mon-104-01",day:"Monday",start:10,end:12,course:"104",type:"Lab",section:"01",room:"AB - S026-B3",group:"SWD-JR-1",engineer:"Unassigned"},
+  {id:"mon-105-06",day:"Monday",start:10,end:12,course:"105",type:"Lab",section:"06",room:"AB - S031-B",group:"ENGR-NEW-6",engineer:"Unassigned"},
+  {id:"mon-224-l01",day:"Monday",start:10,end:12,course:"224",type:"Lecture",section:"01",room:"AB - G005-C",group:"NANENG-SR-2, NANENG-SR-1",engineer:"Unassigned"},
+  {id:"mon-104-02",day:"Monday",start:14,end:16,course:"104",type:"Lab",section:"02",room:"AB - S026-B3",group:"SWD-JR-2",engineer:"Unassigned"},
+  {id:"mon-111-01",day:"Monday",start:14,end:17,course:"111",type:"Lab",section:"01",room:"AB - S031-B",group:"SCI-NEW-1",engineer:"Unassigned"},
+  {id:"mon-211-01",day:"Monday",start:15,end:18,course:"211",type:"Lab",section:"01",room:"AB - S020-B2",group:"PEU-SO-1, PEU-FR-1, NANSCI-SO-1",engineer:"Unassigned"},
+
+  {id:"tue-105-08",day:"Tuesday",start:8,end:10,course:"105",type:"Lab",section:"08",room:"AB - S031-B",group:"ENGR-NEW-8",engineer:"Unassigned"},
+  {id:"tue-105-09",day:"Tuesday",start:10,end:12,course:"105",type:"Lab",section:"09",room:"AB - S031-B",group:"ENGR-NEW-9",engineer:"Unassigned"},
+  {id:"tue-105-11",day:"Tuesday",start:14,end:15,course:"105",type:"Lab",section:"11",room:"AB - S031-B",group:"ENGR-NEW-11",engineer:"Unassigned",note:"End time needs verification"},
+  {id:"tue-111-02",day:"Tuesday",start:15,end:18,course:"111",type:"Lab",section:"02",room:"AB - S031-B",group:"SCI-NEW-2",engineer:"Unassigned"},
+
+  {id:"wed-111-03",day:"Wednesday",start:9,end:12,course:"111",type:"Lab",section:"03",room:"AB - S031-B",group:"SCI-NEW-3",engineer:"Unassigned"},
+  {id:"wed-105-01",day:"Wednesday",start:14,end:16,course:"105",type:"Lab",section:"01",room:"AB - S031-B",group:"ENGR-NEW-1",engineer:"Unassigned"},
+  {id:"wed-105-02",day:"Wednesday",start:16,end:18,course:"105",type:"Lab",section:"02",room:"AB - S031-B",group:"ENGR-NEW-2",engineer:"Unassigned"}
+];
+
+const STORAGE_KEY = "physicsLabEngineerAssignments_v1";
+
+/* Embedded assignments are updated when you use "Save Assigned HTML". */
+const embeddedAssignments = {
+  "sun-105-12": "Suleyman",
+  "sun-224-01": "Abdelrahman",
+  "sun-104-03": "Suleyman",
+  "sun-105-10": "Abdelrahman",
+  "sun-105-04": "Abdelrahman",
+  "sun-104-04": "Suleyman",
+  "sun-105-05": "Abdelrahman",
+  "sun-224-02": "Suleyman",
+  "sun-224-t01": "Unassigned",
+  "sun-105-03": "Suleyman",
+  "sun-224-t02": "Unassigned",
+  "mon-105-07": "Abdelrahman",
+  "mon-104-01": "Abdelrahman",
+  "mon-105-06": "Suleyman",
+  "mon-224-l01": "Unassigned",
+  "mon-104-02": "Suleyman",
+  "mon-111-01": "Abdelrahman",
+  "mon-211-01": "Suleyman",
+  "tue-105-08": "Abdelrahman",
+  "tue-105-09": "Abdelrahman",
+  "tue-105-11": "Unassigned",
+  "tue-111-02": "Suleyman",
+  "wed-111-03": "Suleyman",
+  "wed-105-01": "Abdelrahman",
+  "wed-105-02": "Abdelrahman"
+};
+
+function loadAssignments() {
+  let saved = {};
+  try {
+    saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+  } catch (e) {}
+
+  scheduleData.forEach(entry => {
+    if (embeddedAssignments[entry.id]) entry.engineer = embeddedAssignments[entry.id];
+    if (saved[entry.id]) entry.engineer = saved[entry.id];
+  });
+}
+
+function saveAssignments() {
+  const assignments = {};
+  scheduleData.forEach(entry => assignments[entry.id] = entry.engineer);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(assignments));
+  const s = document.getElementById("saveStatus");
+  s.textContent = "Assignments saved";
+  setTimeout(() => s.textContent = "", 1500);
+}
+
+const headRow = document.querySelector("#schedule thead tr");
+hours.forEach(hour => {
+  const th = document.createElement("th");
+  th.textContent = `${String(hour).padStart(2,'0')}:00-${String(hour+1).padStart(2,'0')}:00`;
+  headRow.appendChild(th);
+});
+
+const tbody = document.querySelector("#schedule tbody");
+for (const day of days) {
+  const row = document.createElement("tr");
+  const dayCell = document.createElement("td");
+  dayCell.textContent = day;
+  row.appendChild(dayCell);
+
+  for (const hour of hours) {
+    const cell = document.createElement("td");
+    cell.dataset.day = day;
+    cell.dataset.hour = hour;
+    row.appendChild(cell);
+  }
+  tbody.appendChild(row);
+}
+
+function makeEngineerSelect(entry) {
+  const select = document.createElement("select");
+  select.className = "engineer-select";
+  select.dataset.entryId = entry.id;
+
+  ["Unassigned","Suleyman","Abdelrahman"].forEach(name => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    if (entry.engineer === name) option.selected = true;
+    select.appendChild(option);
+  });
+
+  select.addEventListener("click", e => e.stopPropagation());
+  select.addEventListener("change", function() {
+    entry.engineer = this.value;
+    saveAssignments();
+    renderSchedule();
+  });
+
+  return select;
+}
+
+function renderSchedule() {
+  document.querySelectorAll("td[data-day]").forEach(cell => cell.innerHTML = "");
+
+  scheduleData.forEach(entry => {
+    for (let hour = entry.start; hour < entry.end; hour++) {
+      const cell = document.querySelector(
+        `td[data-day='${entry.day}'][data-hour='${hour}']`
+      );
+      if (!cell) continue;
+
+      const div = document.createElement("div");
+      div.className = `event course-${entry.course} engineer-${entry.engineer}`;
+      div.dataset.course = entry.course;
+      div.dataset.engineer = entry.engineer;
+
+      const details = document.createElement("div");
+      details.innerHTML =
+        `<b>PHYS ${entry.course}</b><br>` +
+        `${entry.type} • Sec ${entry.section}<br>` +
+        `${entry.room}<br>` +
+        `${entry.group ? entry.group : ""}` +
+        `${entry.note ? "<br><b>⚠ " + entry.note + "</b>" : ""}`;
+
+      div.appendChild(details);
+      div.appendChild(makeEngineerSelect(entry));
+      cell.appendChild(div);
+    }
+  });
+
+  filterSchedule();
+}
+
+function filterSchedule() {
+  const selectedCourses = Array.from(
+    document.querySelectorAll(".course-checkbox:checked")
+  ).map(cb => cb.value);
+
+  const selectedEngineers = Array.from(
+    document.querySelectorAll(".engineer-checkbox:checked")
+  ).map(cb => cb.value);
+
+  const engineerFilterActive = selectedEngineers.length > 0;
+
+  document.querySelectorAll(".event").forEach(div => {
+    const courseMatch = selectedCourses.includes(div.dataset.course);
+    const engineerMatch = !engineerFilterActive || selectedEngineers.includes(div.dataset.engineer);
+
+    if (courseMatch && engineerMatch) div.classList.remove("hidden");
+    else div.classList.add("hidden");
+  });
+}
+
+function showAll() {
+  document.querySelectorAll(".course-checkbox").forEach(cb => cb.checked = true);
+  document.querySelectorAll(".engineer-checkbox").forEach(cb => cb.checked = false);
+  filterSchedule();
+}
+
+function clearCourseFilters() {
+  document.querySelectorAll(".course-checkbox").forEach(cb => cb.checked = false);
+  filterSchedule();
+}
+
+function resetAssignments() {
+  if (!confirm("Reset all lab engineer assignments to Unassigned?")) return;
+  scheduleData.forEach(entry => entry.engineer = "Unassigned");
+  localStorage.removeItem(STORAGE_KEY);
+  renderSchedule();
+}
+
+function downloadSavedHtml() {
+  const assignments = {};
+  scheduleData.forEach(entry => assignments[entry.id] = entry.engineer);
+
+  // Clean table inner contents before cloning to avoid saving generated cells into DOM
+  document.querySelector("#schedule thead tr").innerHTML = "<th>Day</th>";
+  document.querySelector("#schedule tbody").innerHTML = "";
+
+  let html = document.documentElement.outerHTML;
+
+  const replacement =
+    "const embeddedAssignments = " +
+    JSON.stringify(assignments, null, 2) +
+    ";";
+
+  html = html.replace(
+    /const embeddedAssignments = \{[\s\S]*?\};/,
+    replacement
+  );
+
+  // Re-render UI table after saving file
+  hours.forEach(hour => {
+    const th = document.createElement("th");
+    th.textContent = `${String(hour).padStart(2,'0')}:00-${String(hour+1).padStart(2,'0')}:00`;
+    document.querySelector("#schedule thead tr").appendChild(th);
+  });
+  for (const day of days) {
+    const row = document.createElement("tr");
+    const dayCell = document.createElement("td");
+    dayCell.textContent = day;
+    row.appendChild(dayCell);
+
+    for (const hour of hours) {
+      const cell = document.createElement("td");
+      cell.dataset.day = day;
+      cell.dataset.hour = hour;
+      row.appendChild(cell);
+    }
+    document.querySelector("#schedule tbody").appendChild(row);
+  }
+  renderSchedule();
+
+  const blob = new Blob(["<!DOCTYPE html>\n" + html], {type: "text/html;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "physics_lab_schedule_assigned.html";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+
+  const s = document.getElementById("saveStatus");
+  s.textContent = "HTML file saved";
+  setTimeout(() => s.textContent = "", 1800);
+}
+
+document.querySelectorAll("input[type='checkbox']").forEach(cb => {
+  cb.addEventListener("change", filterSchedule);
+});
+
+loadAssignments();
+renderSchedule();
+</script>
+
+
+<style></style></body><style></style></html>
